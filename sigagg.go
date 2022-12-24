@@ -115,6 +115,7 @@ func (a *aggregateCheck) AggregateVerify(pubkeys []*Pubkey, messages [][]byte, s
 func (a *aggregateCheck) coreVerify(pk *Pubkey, message []byte, signature *Signature) error {
 	// 1. R = signature_to_point(signature)
 	R := (*kbls.PointG2)(signature)
+	fmt.Printf("R: %x\n", kbls.NewG2().ToBytes(R))
 	// 2. If R is INVALID, return INVALID
 	// 3. If signature_subgroup_check(R) is INVALID, return INVALID
 	// 4. If KeyValidate(PK) is INVALID, return INVALID
@@ -127,8 +128,10 @@ func (a *aggregateCheck) coreVerify(pk *Pubkey, message []byte, signature *Signa
 
 	// 5. xP = pubkey_to_point(PK)
 	xP := (*kbls.PointG1)(pk)
+	fmt.Printf("xp: %x\n", kbls.NewG1().ToBytes(xP))
 	// 6. Q = hash_to_point(message)
 	Q, err := a.g2.HashToCurve(message, domain)
+	fmt.Printf("Q: %x\n", kbls.NewG2().ToBytes(Q))
 	if err != nil {
 		// e.g. when the domain is too long. Maybe change to panic if never due to a usage error?
 		return fmt.Errorf("coreVerify: failed to hash message to g2: %v", err)
@@ -205,6 +208,10 @@ func (a *aggregateCheck) Eth2FastAggregateVerify(pubkeys []*Pubkey, message []by
 func (a *aggregateCheck) Check() error {
 	a.Lock()
 	defer a.Unlock()
+	g1 := &kbls.G1One
+	ng1 := new(kbls.PointG1).Set(g1)
+	kbls.NewG1().Neg(ng1, g1)
+	fmt.Printf("P: %x\n", kbls.NewG1().ToBytes(ng1))
 	a.eng.AddPairInv(&kbls.G1One, a.aggSig)
 	res := a.eng.Check()
 	a.eng.Reset()
